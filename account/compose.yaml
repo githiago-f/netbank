@@ -1,0 +1,67 @@
+version: '3.7'
+
+services:
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - javams-bank
+    volumes:
+      - db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: javabank
+      POSTGRES_PASSWORD: javabank
+      POSTGRES_DB: javabank
+
+  eventjournal:
+    image: mongo:4.4.18
+    ports:
+      - 27017:27017
+    volumes:
+      - "ej:/data/db"
+    networks:
+      - javams-bank
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+  zookeeper:
+    image: zookeeper:3.9
+    ports:
+      - "2181:2181"
+    volumes:
+      - "zookeeper_data:/bitnami"
+    environment:
+      ZOO_MY_ID: 1
+      ALLOW_ANONYMOUS_LOGIN: yes
+    networks:
+      - javams-bank
+  kafka:
+    image: bitnami/kafka:3.4
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ALLOW_PLAINTEXT_LISTENERS: yes
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+    ports:
+      - "9092:9092"
+    volumes:
+      - "kafka_data:/bitnami"
+    depends_on:
+      - zookeeper
+    networks:
+      - javams-bank
+
+volumes:
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
+  ej:
+    driver: local
+  db:
+    driver: local
+
+networks:
+  javams-bank:
+    driver: bridge
